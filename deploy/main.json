@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.35.1.17967",
-      "templateHash": "15254561401879673618"
+      "templateHash": "1043386392993181983"
     }
   },
   "parameters": {
@@ -201,67 +201,6 @@
     {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2022-09-01",
-      "name": "[format('{0}--delay1', deployment().name)]",
-      "resourceGroup": "[variables('resourceGroupName')]",
-      "properties": {
-        "expressionEvaluationOptions": {
-          "scope": "inner"
-        },
-        "mode": "Incremental",
-        "template": {
-          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-          "contentVersion": "1.0.0.0",
-          "metadata": {
-            "_generator": {
-              "name": "bicep",
-              "version": "0.35.1.17967",
-              "templateHash": "18067427819910296985"
-            }
-          },
-          "parameters": {
-            "delayInSeconds": {
-              "type": "int",
-              "defaultValue": 30,
-              "metadata": {
-                "description": "The duration of the delay in seconds (default is 30 seconds)"
-              }
-            }
-          },
-          "variables": {
-            "deploymentNameGuid": "[guid(deployment().name)]"
-          },
-          "resources": [
-            {
-              "type": "Microsoft.Resources/deploymentScripts",
-              "apiVersion": "2020-10-01",
-              "name": "[format('delay-script-{0}', take(variables('deploymentNameGuid'), 5))]",
-              "location": "[resourceGroup().location]",
-              "kind": "AzurePowerShell",
-              "properties": {
-                "azPowerShellVersion": "7.0",
-                "retentionInterval": "PT1H",
-                "timeout": "[format('PT{0}S', parameters('delayInSeconds'))]",
-                "cleanupPreference": "Always",
-                "scriptContent": "[format('Start-Sleep -Seconds {0}; Write-Output \"Delay completed after {1} seconds.\"', parameters('delayInSeconds'), parameters('delayInSeconds'))]"
-              }
-            }
-          ],
-          "outputs": {
-            "delayComplete": {
-              "type": "bool",
-              "value": true
-            }
-          }
-        }
-      },
-      "dependsOn": [
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--logAnalyticsWorkspace', deployment().name))]",
-        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName'))]"
-      ]
-    },
-    {
-      "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2022-09-01",
       "name": "[format('{0}--acaenvironment', deployment().name)]",
       "resourceGroup": "[variables('resourceGroupName')]",
       "properties": {
@@ -371,69 +310,7 @@
         }
       },
       "dependsOn": [
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--delay1', deployment().name))]",
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--logAnalyticsWorkspace', deployment().name))]",
-        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName'))]"
-      ]
-    },
-    {
-      "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2022-09-01",
-      "name": "[format('{0}--delay2', deployment().name)]",
-      "resourceGroup": "[variables('resourceGroupName')]",
-      "properties": {
-        "expressionEvaluationOptions": {
-          "scope": "inner"
-        },
-        "mode": "Incremental",
-        "template": {
-          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-          "contentVersion": "1.0.0.0",
-          "metadata": {
-            "_generator": {
-              "name": "bicep",
-              "version": "0.35.1.17967",
-              "templateHash": "18067427819910296985"
-            }
-          },
-          "parameters": {
-            "delayInSeconds": {
-              "type": "int",
-              "defaultValue": 30,
-              "metadata": {
-                "description": "The duration of the delay in seconds (default is 30 seconds)"
-              }
-            }
-          },
-          "variables": {
-            "deploymentNameGuid": "[guid(deployment().name)]"
-          },
-          "resources": [
-            {
-              "type": "Microsoft.Resources/deploymentScripts",
-              "apiVersion": "2020-10-01",
-              "name": "[format('delay-script-{0}', take(variables('deploymentNameGuid'), 5))]",
-              "location": "[resourceGroup().location]",
-              "kind": "AzurePowerShell",
-              "properties": {
-                "azPowerShellVersion": "7.0",
-                "retentionInterval": "PT1H",
-                "timeout": "[format('PT{0}S', parameters('delayInSeconds'))]",
-                "cleanupPreference": "Always",
-                "scriptContent": "[format('Start-Sleep -Seconds {0}; Write-Output \"Delay completed after {1} seconds.\"', parameters('delayInSeconds'), parameters('delayInSeconds'))]"
-              }
-            }
-          ],
-          "outputs": {
-            "delayComplete": {
-              "type": "bool",
-              "value": true
-            }
-          }
-        }
-      },
-      "dependsOn": [
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--acaenvironment', deployment().name))]",
         "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName'))]"
       ]
     },
@@ -633,68 +510,6 @@
     {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2022-09-01",
-      "name": "[format('{0}--delay3', deployment().name)]",
-      "resourceGroup": "[variables('resourceGroupName')]",
-      "properties": {
-        "expressionEvaluationOptions": {
-          "scope": "inner"
-        },
-        "mode": "Incremental",
-        "template": {
-          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-          "contentVersion": "1.0.0.0",
-          "metadata": {
-            "_generator": {
-              "name": "bicep",
-              "version": "0.35.1.17967",
-              "templateHash": "18067427819910296985"
-            }
-          },
-          "parameters": {
-            "delayInSeconds": {
-              "type": "int",
-              "defaultValue": 30,
-              "metadata": {
-                "description": "The duration of the delay in seconds (default is 30 seconds)"
-              }
-            }
-          },
-          "variables": {
-            "deploymentNameGuid": "[guid(deployment().name)]"
-          },
-          "resources": [
-            {
-              "type": "Microsoft.Resources/deploymentScripts",
-              "apiVersion": "2020-10-01",
-              "name": "[format('delay-script-{0}', take(variables('deploymentNameGuid'), 5))]",
-              "location": "[resourceGroup().location]",
-              "kind": "AzurePowerShell",
-              "properties": {
-                "azPowerShellVersion": "7.0",
-                "retentionInterval": "PT1H",
-                "timeout": "[format('PT{0}S', parameters('delayInSeconds'))]",
-                "cleanupPreference": "Always",
-                "scriptContent": "[format('Start-Sleep -Seconds {0}; Write-Output \"Delay completed after {1} seconds.\"', parameters('delayInSeconds'), parameters('delayInSeconds'))]"
-              }
-            }
-          ],
-          "outputs": {
-            "delayComplete": {
-              "type": "bool",
-              "value": true
-            }
-          }
-        }
-      },
-      "dependsOn": [
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--delay2', deployment().name))]",
-        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName'))]",
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--storage', deployment().name))]"
-      ]
-    },
-    {
-      "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2022-09-01",
       "name": "[format('{0}--acaenvironmentstorages', deployment().name)]",
       "resourceGroup": "[variables('resourceGroupName')]",
       "properties": {
@@ -779,70 +594,9 @@
         }
       },
       "dependsOn": [
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--delay3', deployment().name))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--acaenvironment', deployment().name))]",
         "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName'))]",
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--storage', deployment().name))]"
-      ]
-    },
-    {
-      "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2022-09-01",
-      "name": "[format('{0}--delay4', deployment().name)]",
-      "resourceGroup": "[variables('resourceGroupName')]",
-      "properties": {
-        "expressionEvaluationOptions": {
-          "scope": "inner"
-        },
-        "mode": "Incremental",
-        "template": {
-          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-          "contentVersion": "1.0.0.0",
-          "metadata": {
-            "_generator": {
-              "name": "bicep",
-              "version": "0.35.1.17967",
-              "templateHash": "18067427819910296985"
-            }
-          },
-          "parameters": {
-            "delayInSeconds": {
-              "type": "int",
-              "defaultValue": 30,
-              "metadata": {
-                "description": "The duration of the delay in seconds (default is 30 seconds)"
-              }
-            }
-          },
-          "variables": {
-            "deploymentNameGuid": "[guid(deployment().name)]"
-          },
-          "resources": [
-            {
-              "type": "Microsoft.Resources/deploymentScripts",
-              "apiVersion": "2020-10-01",
-              "name": "[format('delay-script-{0}', take(variables('deploymentNameGuid'), 5))]",
-              "location": "[resourceGroup().location]",
-              "kind": "AzurePowerShell",
-              "properties": {
-                "azPowerShellVersion": "7.0",
-                "retentionInterval": "PT1H",
-                "timeout": "[format('PT{0}S', parameters('delayInSeconds'))]",
-                "cleanupPreference": "Always",
-                "scriptContent": "[format('Start-Sleep -Seconds {0}; Write-Output \"Delay completed after {1} seconds.\"', parameters('delayInSeconds'), parameters('delayInSeconds'))]"
-              }
-            }
-          ],
-          "outputs": {
-            "delayComplete": {
-              "type": "bool",
-              "value": true
-            }
-          }
-        }
-      },
-      "dependsOn": [
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--acaenvironmentstorages', deployment().name))]",
-        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName'))]"
       ]
     },
     {
@@ -1103,8 +857,8 @@
         }
       },
       "dependsOn": [
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--delay4', deployment().name))]",
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--acaenvironment', deployment().name))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--acaenvironmentstorages', deployment().name))]",
         "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName'))]"
       ]
     }
