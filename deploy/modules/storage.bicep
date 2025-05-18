@@ -26,7 +26,7 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2021-09-01' = {
   kind: 'StorageV2'
   properties: {
     publicNetworkAccess: 'Disabled'
-    allowBlobPublicAccess: false
+    allowBlobPublicAccess: false  // Explicitly set to false to comply with policy
     minimumTlsVersion: 'TLS1_2'
     supportsHttpsTrafficOnly: true
     networkAcls: {
@@ -57,7 +57,7 @@ resource storageContainer 'Microsoft.Storage/storageAccounts/blobServices/contai
   name: containerName
   parent: blobServices
   properties: {
-    publicAccess: 'None'
+    publicAccess: 'None'  // Explicitly set container to no public access
   }
 }
 
