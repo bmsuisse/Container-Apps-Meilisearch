@@ -1,5 +1,4 @@
-// 2. STORAGE.BICEP - Updated to include resource access rules
-
+// Updated storage.bicep with fixed resourceAccessRules
 @description('The name of your application')
 param applicationName string
 
@@ -42,12 +41,6 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2021-09-01' = {
       defaultAction: 'Deny'
       virtualNetworkRules: []
       ipRules: []
-      resourceAccessRules: enableManagedIdentityAccess && !empty(containerAppEnvId) ? [
-        {
-          tenantId: subscription().tenantId
-          resourceId: containerAppEnvId
-        }
-      ] : []
     }
   }
 }

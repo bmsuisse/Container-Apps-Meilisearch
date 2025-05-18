@@ -5,13 +5,13 @@
     "_generator": {
       "name": "bicep",
       "version": "0.35.1.17967",
-      "templateHash": "13817298552648072662"
+      "templateHash": "15254561401879673618"
     }
   },
   "parameters": {
     "location": {
       "type": "string",
-      "defaultValue": "northcentralus",
+      "defaultValue": "westeurope",
       "metadata": {
         "description": "The Azure region code for deployment resource group and resources such as westus, eastus, northcentralus, northeurope, etc..."
       }
@@ -81,10 +81,7 @@
     },
     "useManagedIdentity": {
       "type": "bool",
-      "defaultValue": true,
-      "metadata": {
-        "description": "Use managed identity for storage access instead of keys"
-      }
+      "defaultValue": true
     }
   },
   "variables": {
@@ -204,6 +201,67 @@
     {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2022-09-01",
+      "name": "[format('{0}--delay1', deployment().name)]",
+      "resourceGroup": "[variables('resourceGroupName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.35.1.17967",
+              "templateHash": "18067427819910296985"
+            }
+          },
+          "parameters": {
+            "delayInSeconds": {
+              "type": "int",
+              "defaultValue": 30,
+              "metadata": {
+                "description": "The duration of the delay in seconds (default is 30 seconds)"
+              }
+            }
+          },
+          "variables": {
+            "deploymentNameGuid": "[guid(deployment().name)]"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Resources/deploymentScripts",
+              "apiVersion": "2020-10-01",
+              "name": "[format('delay-script-{0}', take(variables('deploymentNameGuid'), 5))]",
+              "location": "[resourceGroup().location]",
+              "kind": "AzurePowerShell",
+              "properties": {
+                "azPowerShellVersion": "7.0",
+                "retentionInterval": "PT1H",
+                "timeout": "[format('PT{0}S', parameters('delayInSeconds'))]",
+                "cleanupPreference": "Always",
+                "scriptContent": "[format('Start-Sleep -Seconds {0}; Write-Output \"Delay completed after {1} seconds.\"', parameters('delayInSeconds'), parameters('delayInSeconds'))]"
+              }
+            }
+          ],
+          "outputs": {
+            "delayComplete": {
+              "type": "bool",
+              "value": true
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--logAnalyticsWorkspace', deployment().name))]",
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
       "name": "[format('{0}--acaenvironment', deployment().name)]",
       "resourceGroup": "[variables('resourceGroupName')]",
       "properties": {
@@ -313,7 +371,69 @@
         }
       },
       "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--delay1', deployment().name))]",
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--logAnalyticsWorkspace', deployment().name))]",
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "[format('{0}--delay2', deployment().name)]",
+      "resourceGroup": "[variables('resourceGroupName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.35.1.17967",
+              "templateHash": "18067427819910296985"
+            }
+          },
+          "parameters": {
+            "delayInSeconds": {
+              "type": "int",
+              "defaultValue": 30,
+              "metadata": {
+                "description": "The duration of the delay in seconds (default is 30 seconds)"
+              }
+            }
+          },
+          "variables": {
+            "deploymentNameGuid": "[guid(deployment().name)]"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Resources/deploymentScripts",
+              "apiVersion": "2020-10-01",
+              "name": "[format('delay-script-{0}', take(variables('deploymentNameGuid'), 5))]",
+              "location": "[resourceGroup().location]",
+              "kind": "AzurePowerShell",
+              "properties": {
+                "azPowerShellVersion": "7.0",
+                "retentionInterval": "PT1H",
+                "timeout": "[format('PT{0}S', parameters('delayInSeconds'))]",
+                "cleanupPreference": "Always",
+                "scriptContent": "[format('Start-Sleep -Seconds {0}; Write-Output \"Delay completed after {1} seconds.\"', parameters('delayInSeconds'), parameters('delayInSeconds'))]"
+              }
+            }
+          ],
+          "outputs": {
+            "delayComplete": {
+              "type": "bool",
+              "value": true
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--acaenvironment', deployment().name))]",
         "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName'))]"
       ]
     },
@@ -345,12 +465,6 @@
           },
           "resourceTags": {
             "value": "[variables('defaultTags')]"
-          },
-          "containerAppEnvId": {
-            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--acaenvironment', deployment().name)), '2022-09-01').outputs.acaEnvironmentId.value]"
-          },
-          "enableManagedIdentityAccess": {
-            "value": "[parameters('useManagedIdentity')]"
           }
         },
         "template": {
@@ -360,7 +474,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.35.1.17967",
-              "templateHash": "585781886509428479"
+              "templateHash": "3762729686184118228"
             }
           },
           "parameters": {
@@ -437,8 +551,7 @@
                   "bypass": "AzureServices",
                   "defaultAction": "Deny",
                   "virtualNetworkRules": [],
-                  "ipRules": [],
-                  "resourceAccessRules": "[if(and(parameters('enableManagedIdentityAccess'), not(empty(parameters('containerAppEnvId')))), createArray(createObject('tenantId', subscription().tenantId, 'resourceId', parameters('containerAppEnvId'))), createArray())]"
+                  "ipRules": []
                 }
               }
             },
@@ -514,29 +627,19 @@
         }
       },
       "dependsOn": [
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--acaenvironment', deployment().name))]",
         "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName'))]"
       ]
     },
     {
-      "condition": "[parameters('useManagedIdentity')]",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2022-09-01",
-      "name": "[format('{0}--roleAssignment', deployment().name)]",
+      "name": "[format('{0}--delay3', deployment().name)]",
       "resourceGroup": "[variables('resourceGroupName')]",
       "properties": {
         "expressionEvaluationOptions": {
           "scope": "inner"
         },
         "mode": "Incremental",
-        "parameters": {
-          "storageAccountId": {
-            "value": "[listOutputsWithSecureValues(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--storage', deployment().name)), '2022-09-01').id]"
-          },
-          "principalId": {
-            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--acaenvironment', deployment().name)), '2022-09-01').outputs.principalId.value]"
-          }
-        },
         "template": {
           "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
           "contentVersion": "1.0.0.0",
@@ -544,50 +647,47 @@
             "_generator": {
               "name": "bicep",
               "version": "0.35.1.17967",
-              "templateHash": "11599665364380411742"
+              "templateHash": "18067427819910296985"
             }
           },
           "parameters": {
-            "storageAccountId": {
-              "type": "string",
+            "delayInSeconds": {
+              "type": "int",
+              "defaultValue": 30,
               "metadata": {
-                "description": "The storage account resource ID"
-              }
-            },
-            "principalId": {
-              "type": "string",
-              "metadata": {
-                "description": "The principal ID of the managed identity"
-              }
-            },
-            "roleDefinitionId": {
-              "type": "string",
-              "defaultValue": "aba4ae5f-2193-4029-9191-0cb91df5e314",
-              "metadata": {
-                "description": "The role definition ID for the Storage File Data SMB Share Contributor role"
+                "description": "The duration of the delay in seconds (default is 30 seconds)"
               }
             }
           },
           "variables": {
-            "storageAccountName": "[split(parameters('storageAccountId'), '/')[8]]"
+            "deploymentNameGuid": "[guid(deployment().name)]"
           },
           "resources": [
             {
-              "type": "Microsoft.Authorization/roleAssignments",
-              "apiVersion": "2022-04-01",
-              "scope": "[format('Microsoft.Storage/storageAccounts/{0}', variables('storageAccountName'))]",
-              "name": "[guid(parameters('storageAccountId'), parameters('principalId'), parameters('roleDefinitionId'))]",
+              "type": "Microsoft.Resources/deploymentScripts",
+              "apiVersion": "2020-10-01",
+              "name": "[format('delay-script-{0}', take(variables('deploymentNameGuid'), 5))]",
+              "location": "[resourceGroup().location]",
+              "kind": "AzurePowerShell",
               "properties": {
-                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', parameters('roleDefinitionId'))]",
-                "principalId": "[parameters('principalId')]",
-                "principalType": "ServicePrincipal"
+                "azPowerShellVersion": "7.0",
+                "retentionInterval": "PT1H",
+                "timeout": "[format('PT{0}S', parameters('delayInSeconds'))]",
+                "cleanupPreference": "Always",
+                "scriptContent": "[format('Start-Sleep -Seconds {0}; Write-Output \"Delay completed after {1} seconds.\"', parameters('delayInSeconds'), parameters('delayInSeconds'))]"
               }
             }
-          ]
+          ],
+          "outputs": {
+            "delayComplete": {
+              "type": "bool",
+              "value": true
+            }
+          }
         }
       },
       "dependsOn": [
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--acaenvironment', deployment().name))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--delay2', deployment().name))]",
         "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName'))]",
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--storage', deployment().name))]"
       ]
@@ -609,15 +709,14 @@
           "storageAccountResName": {
             "value": "[listOutputsWithSecureValues(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--storage', deployment().name)), '2022-09-01').storageAccountName]"
           },
-          "storageAccountResourceKey": "[if(parameters('useManagedIdentity'), createObject('value', ''), createObject('value', listOutputsWithSecureValues(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--storage', deployment().name)), '2022-09-01').storageKey))]",
+          "storageAccountResourceKey": {
+            "value": "[listOutputsWithSecureValues(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--storage', deployment().name)), '2022-09-01').storageKey]"
+          },
           "storageNameMount": {
             "value": "[variables('storageNameMount')]"
           },
           "shareName": {
             "value": "[variables('shareName')]"
-          },
-          "useManagedIdentity": {
-            "value": "[parameters('useManagedIdentity')]"
           }
         },
         "template": {
@@ -627,7 +726,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.35.1.17967",
-              "templateHash": "1156035854046675456"
+              "templateHash": "13805255189993279474"
             }
           },
           "parameters": {
@@ -645,9 +744,8 @@
             },
             "storageAccountResourceKey": {
               "type": "securestring",
-              "defaultValue": "",
               "metadata": {
-                "description": "The storage account key - only used if not using managed identity"
+                "description": "The storage account key"
               }
             },
             "storageNameMount": {
@@ -661,13 +759,6 @@
               "metadata": {
                 "description": "The name of the Azure file share"
               }
-            },
-            "useManagedIdentity": {
-              "type": "bool",
-              "defaultValue": true,
-              "metadata": {
-                "description": "Use managed identity for storage access instead of keys"
-              }
             }
           },
           "resources": [
@@ -678,7 +769,7 @@
               "properties": {
                 "azureFile": {
                   "accountName": "[parameters('storageAccountResName')]",
-                  "accountKey": "[if(parameters('useManagedIdentity'), null(), parameters('storageAccountResourceKey'))]",
+                  "accountKey": "[parameters('storageAccountResourceKey')]",
                   "shareName": "[parameters('shareName')]",
                   "accessMode": "ReadWrite"
                 }
@@ -688,8 +779,70 @@
         }
       },
       "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--delay3', deployment().name))]",
         "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName'))]",
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--storage', deployment().name))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "[format('{0}--delay4', deployment().name)]",
+      "resourceGroup": "[variables('resourceGroupName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.35.1.17967",
+              "templateHash": "18067427819910296985"
+            }
+          },
+          "parameters": {
+            "delayInSeconds": {
+              "type": "int",
+              "defaultValue": 30,
+              "metadata": {
+                "description": "The duration of the delay in seconds (default is 30 seconds)"
+              }
+            }
+          },
+          "variables": {
+            "deploymentNameGuid": "[guid(deployment().name)]"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Resources/deploymentScripts",
+              "apiVersion": "2020-10-01",
+              "name": "[format('delay-script-{0}', take(variables('deploymentNameGuid'), 5))]",
+              "location": "[resourceGroup().location]",
+              "kind": "AzurePowerShell",
+              "properties": {
+                "azPowerShellVersion": "7.0",
+                "retentionInterval": "PT1H",
+                "timeout": "[format('PT{0}S', parameters('delayInSeconds'))]",
+                "cleanupPreference": "Always",
+                "scriptContent": "[format('Start-Sleep -Seconds {0}; Write-Output \"Delay completed after {1} seconds.\"', parameters('delayInSeconds'), parameters('delayInSeconds'))]"
+              }
+            }
+          ],
+          "outputs": {
+            "delayComplete": {
+              "type": "bool",
+              "value": true
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--acaenvironmentstorages', deployment().name))]",
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName'))]"
       ]
     },
     {
@@ -950,8 +1103,8 @@
         }
       },
       "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--delay4', deployment().name))]",
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--acaenvironment', deployment().name))]",
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--acaenvironmentstorages', deployment().name))]",
         "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName'))]"
       ]
     }

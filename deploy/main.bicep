@@ -1,10 +1,8 @@
-// Fixed main.bicep
+// Updated main.bicep with better dependencies
 targetScope = 'subscription'
 
-//Azure Regions which Azure Container Apps available at can be found on this link:
-//https://azure.microsoft.com/en-us/explore/global-infrastructure/products-by-region/?products=container-apps&regions=all
 @description('The Azure region code for deployment resource group and resources such as westus, eastus, northcentralus, northeurope, etc...')
-param location string = 'northcentralus'
+param location string = 'westeurope'
 
 @description('The name of your search service. This value should be unique')
 param applicationName string = 'meilisearch'
@@ -54,7 +52,7 @@ param deploymentEnvironment string = 'dev'
 @minLength(32)
 param meilisearchMasterKey string = newGuid()
 
-@description('Use managed identity for storage access instead of keys')
+// We'll keep this parameter but not use it for role assignments
 param useManagedIdentity bool = true
 
 var resourceGroupName = '${applicationName}-${deploymentEnvironment}-rg'
@@ -81,6 +79,7 @@ resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {
   tags: defaultTags
 }
 
+// Module deployments
 module logAnalyticsWorkspace 'modules/logAnalyticsWorkspace.bicep' = {
   scope: resourceGroup(rg.name)
   name: '${deployment().name}--logAnalyticsWorkspace'
@@ -91,7 +90,16 @@ module logAnalyticsWorkspace 'modules/logAnalyticsWorkspace.bicep' = {
   }
 }
 
-// Create the Container App Environment with managed identity first
+// Let's add a DELAY module that will wait for 30 seconds
+module delay1 'modules/delay.bicep' = {
+  scope: resourceGroup(rg.name)
+  name: '${deployment().name}--delay1'
+  dependsOn: [
+    logAnalyticsWorkspace
+  ]
+}
+
+// Create the Container App Environment with managed identity
 module environment 'modules/acaEnvironment.bicep' = {
   scope: resourceGroup(rg.name)
   name: '${deployment().name}--acaenvironment'
@@ -103,9 +111,21 @@ module environment 'modules/acaEnvironment.bicep' = {
     resourceTags: defaultTags
     enableManagedIdentity: useManagedIdentity
   }
+  dependsOn: [
+    delay1
+  ]
 }
 
-// Create the storage account with resource access rules for the Container App Environment
+// Let's add a second DELAY module to ensure the environment is fully provisioned
+module delay2 'modules/delay.bicep' = {
+  scope: resourceGroup(rg.name)
+  name: '${deployment().name}--delay2'
+  dependsOn: [
+    environment
+  ]
+}
+
+// Create the storage account with secure settings but no resource access rules
 module storageModule 'modules/storage.bicep' = {
   scope: resourceGroup(rg.name)
   name: '${deployment().name}--storage'
@@ -116,33 +136,45 @@ module storageModule 'modules/storage.bicep' = {
     containerName: applicationName
     shareName: shareName
     resourceTags: defaultTags
-    containerAppEnvId: environment.outputs.acaEnvironmentId
-    enableManagedIdentityAccess: useManagedIdentity
   }
+  dependsOn: [
+    rg
+  ]
 }
 
-// Assign the necessary RBAC role to allow the managed identity to access storage
-module roleAssignment 'modules/storageRoleAssignment.bicep' = if (useManagedIdentity) {
+// Let's add a third DELAY to ensure storage is fully provisioned
+module delay3 'modules/delay.bicep' = {
   scope: resourceGroup(rg.name)
-  name: '${deployment().name}--roleAssignment'
-  params: {
-    storageAccountId: storageModule.outputs.id
-    principalId: environment.outputs.principalId
-  }
+  name: '${deployment().name}--delay3'
+  dependsOn: [
+    storageModule
+    delay2
+  ]
 }
 
-// Create the storage mount on the Container App Environment
+// Create the storage mount on the Container App Environment using storage keys
 module environmentStorages 'modules/acaEnvironmentStorages.bicep' = {
   scope: resourceGroup(rg.name)
   name: '${deployment().name}--acaenvironmentstorages'
   params: {
     acaEnvironmentName: environmentName
     storageAccountResName: storageModule.outputs.storageAccountName
-    storageAccountResourceKey: useManagedIdentity ? '' : storageModule.outputs.storageKey
+    storageAccountResourceKey: storageModule.outputs.storageKey
     storageNameMount: storageNameMount
     shareName: shareName
-    useManagedIdentity: useManagedIdentity
   }
+  dependsOn: [
+    delay3
+  ]
+}
+
+// Let's add a fourth DELAY to ensure storage mount is fully provisioned
+module delay4 'modules/delay.bicep' = {
+  scope: resourceGroup(rg.name)
+  name: '${deployment().name}--delay4'
+  dependsOn: [
+    environmentStorages
+  ]
 }
 
 // Deploy the Container App with dependency on the storage mount
@@ -184,7 +216,7 @@ module containerApp 'modules/containerApp.bicep' = {
     ]
   }
   dependsOn: [
-    environmentStorages
+    delay4
   ]
 }
 
