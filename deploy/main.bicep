@@ -1,4 +1,4 @@
-// Updated main.bicep to include role assignment
+// Final main.bicep without role assignment
 targetScope = 'subscription'
 
 @description('The Azure region code for deployment resource group and resources such as westus, eastus, northcentralus, northeurope, etc...')
@@ -58,9 +58,6 @@ param useManagedIdentity bool = true
 @description('Enable public network access to storage')
 param enablePublicNetworkAccess bool = true
 
-@description('Enable role assignment for the managed identity')
-param enableRoleAssignment bool = true
-
 var resourceGroupName = '${applicationName}-${deploymentEnvironment}-rg'
 var logAnalyticsWorkspaceResName = '${applicationName}-${deploymentEnvironment}-logs'
 var environmentName = '${applicationName}-${deploymentEnvironment}-env'
@@ -69,7 +66,7 @@ var storageAccountName = '${take(applicationName,14)}${deploymentEnvironment}str
 var shareName = 'meilisearch-fileshare'
 var storageNameMount = 'permanent-storage-mount'
 
-var meilisearchImageName = 'getmeili/meilisearch:v0.29'
+var meilisearchImageName = 'getmeili/meilisearch:v1.14.0'
 var meilisearchAppPort = 7700
 var dbMountPath = '/data/meili'
 var volumeName = 'azure-file-volume'
@@ -125,20 +122,6 @@ module storageModule 'modules/storage.bicep' = {
   }
 }
 
-// Assign Storage Account Contributor role to the Container App Environment's managed identity
-module roleAssignment 'modules/storageRoleAssignment.bicep' = if (useManagedIdentity && enableRoleAssignment) {
-  scope: resourceGroup(rg.name)
-  name: '${deployment().name}--roleAssignment'
-  params: {
-    storageAccountId: storageModule.outputs.id
-    principalId: environment.outputs.principalId
-  }
-  dependsOn: [
-    environment
-    storageModule
-  ]
-}
-
 // Create the storage mount on the Container App Environment using storage keys
 module environmentStorages 'modules/acaEnvironmentStorages.bicep' = {
   scope: resourceGroup(rg.name)
@@ -153,7 +136,6 @@ module environmentStorages 'modules/acaEnvironmentStorages.bicep' = {
   dependsOn: [
     environment
     storageModule
-    roleAssignment
   ]
 }
 
@@ -201,3 +183,4 @@ module containerApp 'modules/containerApp.bicep' = {
 }
 
 output containerAppUrl string = containerApp.outputs.fqdn
+output notes string = 'The Container App has managed identity enabled, but role assignments need to be configured manually in the Azure Portal.'
