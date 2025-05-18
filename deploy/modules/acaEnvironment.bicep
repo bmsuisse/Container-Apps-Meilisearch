@@ -1,21 +1,30 @@
+// Fixed acaEnvironment.bicep
 @description('The name of Azure Container Apps Environment')
 param acaEnvironmentName string
 
-@description('The Azure region where all resources in this example should be created')
+@description('The Azure region for resources')
 param location string = resourceGroup().location
 
-@description('A list of tags to apply to the resources')
+@description('Resource tags to apply')
 param resourceTags object
 
+@description('Log Analytics Customer ID')
 param logAnalyticsWorkspaceCustomerId string
 
+@description('Log Analytics Primary Shared Key')
 @secure()
-param logAnalyticsWorkspacePrimarySharedKey string 
+param logAnalyticsWorkspacePrimarySharedKey string
 
-resource environment 'Microsoft.App/managedEnvironments@2022-03-01' = {
+@description('Enable system-assigned managed identity')
+param enableManagedIdentity bool = true
+
+resource acaEnvironment 'Microsoft.App/managedEnvironments@2022-03-01' = {
   name: acaEnvironmentName
   location: location
   tags: resourceTags
+  identity: enableManagedIdentity ? {
+    type: 'SystemAssigned'
+  } : null
   properties: {
     appLogsConfiguration: {
       destination: 'log-analytics'
@@ -27,4 +36,6 @@ resource environment 'Microsoft.App/managedEnvironments@2022-03-01' = {
   }
 }
 
-output acaEnvironmentId string = environment.id
+output acaEnvironmentId string = acaEnvironment.id
+// Output the principal ID of the managed identity if enabled
+output principalId string = enableManagedIdentity ? acaEnvironment.identity.principalId : ''

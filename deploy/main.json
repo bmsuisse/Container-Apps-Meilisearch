@@ -4,8 +4,8 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.10.61.36676",
-      "templateHash": "2985394370871187515"
+      "version": "0.35.1.17967",
+      "templateHash": "13817298552648072662"
     }
   },
   "parameters": {
@@ -66,17 +66,24 @@
     "deploymentEnvironment": {
       "type": "string",
       "defaultValue": "dev",
+      "maxLength": 4,
       "metadata": {
         "description": "The environment of deployment such as dev, test, stg, prod, etc..."
-      },
-      "maxLength": 4
+      }
     },
     "meilisearchMasterKey": {
-      "type": "secureString",
+      "type": "securestring",
       "defaultValue": "[newGuid()]",
       "minLength": 32,
       "metadata": {
         "description": "The Master API Key used to connect to Meilisearch instance"
+      }
+    },
+    "useManagedIdentity": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Use managed identity for storage access instead of keys"
       }
     }
   },
@@ -106,186 +113,7 @@
     },
     {
       "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2020-10-01",
-      "name": "[format('{0}--storage', deployment().name)]",
-      "resourceGroup": "[variables('resourceGroupName')]",
-      "properties": {
-        "expressionEvaluationOptions": {
-          "scope": "inner"
-        },
-        "mode": "Incremental",
-        "parameters": {
-          "storageAccountName": {
-            "value": "[variables('storageAccountName')]"
-          },
-          "location": {
-            "value": "[reference(subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName')), '2021-04-01', 'full').location]"
-          },
-          "applicationName": {
-            "value": "[parameters('applicationName')]"
-          },
-          "containerName": {
-            "value": "[parameters('applicationName')]"
-          },
-          "shareName": {
-            "value": "[variables('shareName')]"
-          },
-          "resourceTags": {
-            "value": "[variables('defaultTags')]"
-          }
-        },
-        "template": {
-          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-          "contentVersion": "1.0.0.0",
-          "metadata": {
-            "_generator": {
-              "name": "bicep",
-              "version": "0.10.61.36676",
-              "templateHash": "15936627715968554635"
-            }
-          },
-          "parameters": {
-            "applicationName": {
-              "type": "string",
-              "metadata": {
-                "description": "The name of your application"
-              }
-            },
-            "location": {
-              "type": "string",
-              "defaultValue": "[resourceGroup().location]",
-              "metadata": {
-                "description": "The Azure region where all resources in this example should be created"
-              }
-            },
-            "resourceTags": {
-              "type": "object",
-              "metadata": {
-                "description": "A list of tags to apply to the resources"
-              }
-            },
-            "containerName": {
-              "type": "string",
-              "defaultValue": "[parameters('applicationName')]",
-              "metadata": {
-                "description": "The name of the container to create. Defaults to applicationName value."
-              }
-            },
-            "shareName": {
-              "type": "string",
-              "metadata": {
-                "description": "The name of the Azure file share."
-              }
-            },
-            "storageAccountName": {
-              "type": "string",
-              "metadata": {
-                "description": "The name of storage account"
-              }
-            }
-          },
-          "resources": [
-            {
-              "type": "Microsoft.Storage/storageAccounts",
-              "apiVersion": "2021-09-01",
-              "name": "[parameters('storageAccountName')]",
-              "location": "[parameters('location')]",
-              "tags": "[parameters('resourceTags')]",
-              "sku": {
-                "name": "Standard_LRS"
-              },
-              "kind": "StorageV2",
-              "properties": {
-                "publicNetworkAccess": "Disabled",
-                "allowBlobPublicAccess": false,
-                "minimumTlsVersion": "TLS1_2",
-                "supportsHttpsTrafficOnly": true,
-                "networkAcls": {
-                  "bypass": "AzureServices",
-                  "defaultAction": "Deny",
-                  "virtualNetworkRules": [],
-                  "ipRules": []
-                }
-              }
-            },
-            {
-              "type": "Microsoft.Storage/storageAccounts/blobServices",
-              "apiVersion": "2021-09-01",
-              "name": "[format('{0}/{1}', parameters('storageAccountName'), 'default')]",
-              "dependsOn": [
-                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
-              ],
-              "properties": {
-                "containerDeleteRetentionPolicy": {
-                  "enabled": true,
-                  "days": 7
-                },
-                "deleteRetentionPolicy": {
-                  "enabled": true,
-                  "days": 7
-                }
-              }
-            },
-            {
-              "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
-              "apiVersion": "2021-09-01",
-              "name": "[format('{0}/{1}/{2}', parameters('storageAccountName'), 'default', parameters('containerName'))]",
-              "dependsOn": [
-                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccountName'), 'default')]"
-              ],
-              "properties": {
-                "publicAccess": "None"
-              }
-            },
-            {
-              "type": "Microsoft.Storage/storageAccounts/fileServices",
-              "apiVersion": "2021-09-01",
-              "name": "[format('{0}/{1}', parameters('storageAccountName'), 'default')]",
-              "dependsOn": [
-                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
-              ]
-            },
-            {
-              "type": "Microsoft.Storage/storageAccounts/fileServices/shares",
-              "apiVersion": "2022-05-01",
-              "name": "[format('{0}/{1}/{2}', parameters('storageAccountName'), 'default', parameters('shareName'))]",
-              "properties": {
-                "accessTier": "TransactionOptimized",
-                "enabledProtocols": "SMB",
-                "shareQuota": 1024
-              },
-              "dependsOn": [
-                "[resourceId('Microsoft.Storage/storageAccounts/fileServices', parameters('storageAccountName'), 'default')]"
-              ]
-            }
-          ],
-          "outputs": {
-            "storageAccountName": {
-              "type": "string",
-              "value": "[parameters('storageAccountName')]"
-            },
-            "id": {
-              "type": "string",
-              "value": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
-            },
-            "apiVersion": {
-              "type": "string",
-              "value": "2021-09-01"
-            },
-            "storageKey": {
-              "type": "string",
-              "value": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2021-09-01').keys[0].value]"
-            }
-          }
-        }
-      },
-      "dependsOn": [
-        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName'))]"
-      ]
-    },
-    {
-      "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2020-10-01",
+      "apiVersion": "2022-09-01",
       "name": "[format('{0}--logAnalyticsWorkspace', deployment().name)]",
       "resourceGroup": "[variables('resourceGroupName')]",
       "properties": {
@@ -310,8 +138,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.10.61.36676",
-              "templateHash": "495129164194569447"
+              "version": "0.35.1.17967",
+              "templateHash": "8255773030579401356"
             }
           },
           "parameters": {
@@ -360,7 +188,7 @@
             },
             "logAnalyticsWorkspaceCustomerId": {
               "type": "string",
-              "value": "[reference(resourceId('Microsoft.OperationalInsights/workspaces', parameters('logAnalyticsWorkspaceName'))).customerId]"
+              "value": "[reference(resourceId('Microsoft.OperationalInsights/workspaces', parameters('logAnalyticsWorkspaceName')), '2021-12-01-preview').customerId]"
             },
             "logAnalyticsWorkspacePrimarySharedKey": {
               "type": "string",
@@ -375,7 +203,7 @@
     },
     {
       "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2020-10-01",
+      "apiVersion": "2022-09-01",
       "name": "[format('{0}--acaenvironment', deployment().name)]",
       "resourceGroup": "[variables('resourceGroupName')]",
       "properties": {
@@ -391,13 +219,16 @@
             "value": "[reference(subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName')), '2021-04-01', 'full').location]"
           },
           "logAnalyticsWorkspaceCustomerId": {
-            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--logAnalyticsWorkspace', deployment().name))).outputs.logAnalyticsWorkspaceCustomerId.value]"
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--logAnalyticsWorkspace', deployment().name)), '2022-09-01').outputs.logAnalyticsWorkspaceCustomerId.value]"
           },
           "logAnalyticsWorkspacePrimarySharedKey": {
-            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--logAnalyticsWorkspace', deployment().name))).outputs.logAnalyticsWorkspacePrimarySharedKey.value]"
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--logAnalyticsWorkspace', deployment().name)), '2022-09-01').outputs.logAnalyticsWorkspacePrimarySharedKey.value]"
           },
           "resourceTags": {
             "value": "[variables('defaultTags')]"
+          },
+          "enableManagedIdentity": {
+            "value": "[parameters('useManagedIdentity')]"
           }
         },
         "template": {
@@ -406,8 +237,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.10.61.36676",
-              "templateHash": "7940472866686772238"
+              "version": "0.35.1.17967",
+              "templateHash": "8544920091488805858"
             }
           },
           "parameters": {
@@ -421,20 +252,33 @@
               "type": "string",
               "defaultValue": "[resourceGroup().location]",
               "metadata": {
-                "description": "The Azure region where all resources in this example should be created"
+                "description": "The Azure region for resources"
               }
             },
             "resourceTags": {
               "type": "object",
               "metadata": {
-                "description": "A list of tags to apply to the resources"
+                "description": "Resource tags to apply"
               }
             },
             "logAnalyticsWorkspaceCustomerId": {
-              "type": "string"
+              "type": "string",
+              "metadata": {
+                "description": "Log Analytics Customer ID"
+              }
             },
             "logAnalyticsWorkspacePrimarySharedKey": {
-              "type": "secureString"
+              "type": "securestring",
+              "metadata": {
+                "description": "Log Analytics Primary Shared Key"
+              }
+            },
+            "enableManagedIdentity": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable system-assigned managed identity"
+              }
             }
           },
           "resources": [
@@ -444,6 +288,7 @@
               "name": "[parameters('acaEnvironmentName')]",
               "location": "[parameters('location')]",
               "tags": "[parameters('resourceTags')]",
+              "identity": "[if(parameters('enableManagedIdentity'), createObject('type', 'SystemAssigned'), null())]",
               "properties": {
                 "appLogsConfiguration": {
                   "destination": "log-analytics",
@@ -459,6 +304,10 @@
             "acaEnvironmentId": {
               "type": "string",
               "value": "[resourceId('Microsoft.App/managedEnvironments', parameters('acaEnvironmentName'))]"
+            },
+            "principalId": {
+              "type": "string",
+              "value": "[if(parameters('enableManagedIdentity'), reference(resourceId('Microsoft.App/managedEnvironments', parameters('acaEnvironmentName')), '2022-03-01', 'full').identity.principalId, '')]"
             }
           }
         }
@@ -470,7 +319,282 @@
     },
     {
       "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2020-10-01",
+      "apiVersion": "2022-09-01",
+      "name": "[format('{0}--storage', deployment().name)]",
+      "resourceGroup": "[variables('resourceGroupName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "storageAccountName": {
+            "value": "[variables('storageAccountName')]"
+          },
+          "location": {
+            "value": "[reference(subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName')), '2021-04-01', 'full').location]"
+          },
+          "applicationName": {
+            "value": "[parameters('applicationName')]"
+          },
+          "containerName": {
+            "value": "[parameters('applicationName')]"
+          },
+          "shareName": {
+            "value": "[variables('shareName')]"
+          },
+          "resourceTags": {
+            "value": "[variables('defaultTags')]"
+          },
+          "containerAppEnvId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--acaenvironment', deployment().name)), '2022-09-01').outputs.acaEnvironmentId.value]"
+          },
+          "enableManagedIdentityAccess": {
+            "value": "[parameters('useManagedIdentity')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.35.1.17967",
+              "templateHash": "585781886509428479"
+            }
+          },
+          "parameters": {
+            "applicationName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of your application"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "The Azure region where all resources in this example should be created"
+              }
+            },
+            "resourceTags": {
+              "type": "object",
+              "metadata": {
+                "description": "A list of tags to apply to the resources"
+              }
+            },
+            "containerName": {
+              "type": "string",
+              "defaultValue": "[parameters('applicationName')]",
+              "metadata": {
+                "description": "The name of the container to create. Defaults to applicationName value."
+              }
+            },
+            "shareName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the Azure file share."
+              }
+            },
+            "storageAccountName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of storage account"
+              }
+            },
+            "containerAppEnvId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "The resource ID of the Container App Environment to allow access"
+              }
+            },
+            "enableManagedIdentityAccess": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable access from Container App Environment managed identity"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Storage/storageAccounts",
+              "apiVersion": "2021-09-01",
+              "name": "[parameters('storageAccountName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('resourceTags')]",
+              "sku": {
+                "name": "Standard_LRS"
+              },
+              "kind": "StorageV2",
+              "properties": {
+                "publicNetworkAccess": "Disabled",
+                "allowBlobPublicAccess": false,
+                "minimumTlsVersion": "TLS1_2",
+                "supportsHttpsTrafficOnly": true,
+                "networkAcls": {
+                  "bypass": "AzureServices",
+                  "defaultAction": "Deny",
+                  "virtualNetworkRules": [],
+                  "ipRules": [],
+                  "resourceAccessRules": "[if(and(parameters('enableManagedIdentityAccess'), not(empty(parameters('containerAppEnvId')))), createArray(createObject('tenantId', subscription().tenantId, 'resourceId', parameters('containerAppEnvId'))), createArray())]"
+                }
+              }
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/blobServices",
+              "apiVersion": "2021-09-01",
+              "name": "[format('{0}/{1}', parameters('storageAccountName'), 'default')]",
+              "properties": {
+                "containerDeleteRetentionPolicy": {
+                  "enabled": true,
+                  "days": 7
+                },
+                "deleteRetentionPolicy": {
+                  "enabled": true,
+                  "days": 7
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+              "apiVersion": "2021-09-01",
+              "name": "[format('{0}/{1}/{2}', parameters('storageAccountName'), 'default', parameters('containerName'))]",
+              "properties": {
+                "publicAccess": "None"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccountName'), 'default')]"
+              ]
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/fileServices",
+              "apiVersion": "2021-09-01",
+              "name": "[format('{0}/{1}', parameters('storageAccountName'), 'default')]",
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/fileServices/shares",
+              "apiVersion": "2022-05-01",
+              "name": "[format('{0}/{1}/{2}', parameters('storageAccountName'), 'default', parameters('shareName'))]",
+              "properties": {
+                "accessTier": "TransactionOptimized",
+                "enabledProtocols": "SMB",
+                "shareQuota": 1024
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/fileServices', parameters('storageAccountName'), 'default')]"
+              ]
+            }
+          ],
+          "outputs": {
+            "storageAccountName": {
+              "type": "string",
+              "value": "[parameters('storageAccountName')]"
+            },
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+            },
+            "apiVersion": {
+              "type": "string",
+              "value": "2021-09-01"
+            },
+            "storageKey": {
+              "type": "securestring",
+              "value": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2021-09-01').keys[0].value]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--acaenvironment', deployment().name))]",
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName'))]"
+      ]
+    },
+    {
+      "condition": "[parameters('useManagedIdentity')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "[format('{0}--roleAssignment', deployment().name)]",
+      "resourceGroup": "[variables('resourceGroupName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "storageAccountId": {
+            "value": "[listOutputsWithSecureValues(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--storage', deployment().name)), '2022-09-01').id]"
+          },
+          "principalId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--acaenvironment', deployment().name)), '2022-09-01').outputs.principalId.value]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.35.1.17967",
+              "templateHash": "11599665364380411742"
+            }
+          },
+          "parameters": {
+            "storageAccountId": {
+              "type": "string",
+              "metadata": {
+                "description": "The storage account resource ID"
+              }
+            },
+            "principalId": {
+              "type": "string",
+              "metadata": {
+                "description": "The principal ID of the managed identity"
+              }
+            },
+            "roleDefinitionId": {
+              "type": "string",
+              "defaultValue": "aba4ae5f-2193-4029-9191-0cb91df5e314",
+              "metadata": {
+                "description": "The role definition ID for the Storage File Data SMB Share Contributor role"
+              }
+            }
+          },
+          "variables": {
+            "storageAccountName": "[split(parameters('storageAccountId'), '/')[8]]"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.Storage/storageAccounts/{0}', variables('storageAccountName'))]",
+              "name": "[guid(parameters('storageAccountId'), parameters('principalId'), parameters('roleDefinitionId'))]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', parameters('roleDefinitionId'))]",
+                "principalId": "[parameters('principalId')]",
+                "principalType": "ServicePrincipal"
+              }
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--acaenvironment', deployment().name))]",
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName'))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--storage', deployment().name))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
       "name": "[format('{0}--acaenvironmentstorages', deployment().name)]",
       "resourceGroup": "[variables('resourceGroupName')]",
       "properties": {
@@ -483,16 +607,17 @@
             "value": "[variables('environmentName')]"
           },
           "storageAccountResName": {
-            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--storage', deployment().name))).outputs.storageAccountName.value]"
+            "value": "[listOutputsWithSecureValues(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--storage', deployment().name)), '2022-09-01').storageAccountName]"
           },
-          "storageAccountResourceKey": {
-            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--storage', deployment().name))).outputs.storageKey.value]"
-          },
+          "storageAccountResourceKey": "[if(parameters('useManagedIdentity'), createObject('value', ''), createObject('value', listOutputsWithSecureValues(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--storage', deployment().name)), '2022-09-01').storageKey))]",
           "storageNameMount": {
             "value": "[variables('storageNameMount')]"
           },
           "shareName": {
             "value": "[variables('shareName')]"
+          },
+          "useManagedIdentity": {
+            "value": "[parameters('useManagedIdentity')]"
           }
         },
         "template": {
@@ -501,8 +626,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.10.61.36676",
-              "templateHash": "10608691584742922051"
+              "version": "0.35.1.17967",
+              "templateHash": "1156035854046675456"
             }
           },
           "parameters": {
@@ -519,9 +644,10 @@
               }
             },
             "storageAccountResourceKey": {
-              "type": "secureString",
+              "type": "securestring",
+              "defaultValue": "",
               "metadata": {
-                "description": "The storage account key"
+                "description": "The storage account key - only used if not using managed identity"
               }
             },
             "storageNameMount": {
@@ -533,7 +659,14 @@
             "shareName": {
               "type": "string",
               "metadata": {
-                "description": "The name of the Azure file share. Defaults to applicationName value."
+                "description": "The name of the Azure file share"
+              }
+            },
+            "useManagedIdentity": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Use managed identity for storage access instead of keys"
               }
             }
           },
@@ -545,7 +678,7 @@
               "properties": {
                 "azureFile": {
                   "accountName": "[parameters('storageAccountResName')]",
-                  "accountKey": "[parameters('storageAccountResourceKey')]",
+                  "accountKey": "[if(parameters('useManagedIdentity'), null(), parameters('storageAccountResourceKey'))]",
                   "shareName": "[parameters('shareName')]",
                   "accessMode": "ReadWrite"
                 }
@@ -555,14 +688,13 @@
         }
       },
       "dependsOn": [
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--acaenvironment', deployment().name))]",
         "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName'))]",
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--storage', deployment().name))]"
       ]
     },
     {
       "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2020-10-01",
+      "apiVersion": "2022-09-01",
       "name": "[format('{0}--{1}', deployment().name, parameters('applicationName'))]",
       "resourceGroup": "[variables('resourceGroupName')]",
       "properties": {
@@ -578,7 +710,7 @@
             "value": "[reference(subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName')), '2021-04-01', 'full').location]"
           },
           "environmentId": {
-            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--acaenvironment', deployment().name))).outputs.acaEnvironmentId.value]"
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--acaenvironment', deployment().name)), '2022-09-01').outputs.acaEnvironmentId.value]"
           },
           "containerImage": {
             "value": "[variables('meilisearchImageName')]"
@@ -642,62 +774,114 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.10.61.36676",
-              "templateHash": "3962669354188616313"
+              "version": "0.35.1.17967",
+              "templateHash": "18252605608062279382"
             }
           },
           "parameters": {
             "containerAppName": {
-              "type": "string"
+              "type": "string",
+              "metadata": {
+                "description": "The name of the ACA container app"
+              }
             },
             "location": {
-              "type": "string"
+              "type": "string",
+              "metadata": {
+                "description": "The Azure region for resources"
+              }
+            },
+            "resourceTags": {
+              "type": "object",
+              "metadata": {
+                "description": "Resource tags to apply"
+              }
             },
             "environmentId": {
-              "type": "string"
+              "type": "string",
+              "metadata": {
+                "description": "Container App Environment ID"
+              }
             },
             "containerImage": {
-              "type": "string"
+              "type": "string",
+              "metadata": {
+                "description": "Container image to deploy"
+              }
             },
             "targetPort": {
-              "type": "int"
+              "type": "int",
+              "metadata": {
+                "description": "Port to expose"
+              }
             },
             "minReplicas": {
               "type": "int",
-              "defaultValue": 0
+              "defaultValue": 1,
+              "metadata": {
+                "description": "Minimum number of replicas"
+              }
             },
             "maxReplicas": {
               "type": "int",
-              "defaultValue": 1
-            },
-            "secListObj": {
-              "type": "secureObject"
-            },
-            "envList": {
-              "type": "array",
-              "defaultValue": []
+              "defaultValue": 1,
+              "metadata": {
+                "description": "Maximum number of replicas"
+              }
             },
             "revisionMode": {
               "type": "string",
-              "defaultValue": "Single"
+              "defaultValue": "Single",
+              "allowedValues": [
+                "Multiple",
+                "Single"
+              ],
+              "metadata": {
+                "description": "Revision mode: Multiple or Single"
+              }
             },
             "storageNameMount": {
-              "type": "string"
-            },
-            "volumeName": {
-              "type": "string"
+              "type": "string",
+              "metadata": {
+                "description": "The name of the storage mount"
+              }
             },
             "mountPath": {
-              "type": "string"
+              "type": "string",
+              "metadata": {
+                "description": "The mount path in container"
+              }
             },
-            "resourceTags": {
-              "type": "object"
+            "volumeName": {
+              "type": "string",
+              "metadata": {
+                "description": "The volume name"
+              }
             },
             "resourceAllocationCPU": {
-              "type": "string"
+              "type": "string",
+              "metadata": {
+                "description": "Resource allocation for CPU cores"
+              }
             },
             "resourceAllocationMemory": {
-              "type": "string"
+              "type": "string",
+              "metadata": {
+                "description": "Resource allocation for memory"
+              }
+            },
+            "envList": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "List of environment variables"
+              }
+            },
+            "secListObj": {
+              "type": "secureObject",
+              "metadata": {
+                "description": "Secret list object"
+              }
             }
           },
           "resources": [
@@ -718,8 +902,8 @@
                     "transport": "auto",
                     "traffic": [
                       {
-                        "latestRevision": true,
-                        "weight": 100
+                        "weight": 100,
+                        "latestRevision": true
                       }
                     ]
                   }
@@ -732,8 +916,8 @@
                       "env": "[parameters('envList')]",
                       "volumeMounts": [
                         {
-                          "mountPath": "[parameters('mountPath')]",
-                          "volumeName": "[parameters('volumeName')]"
+                          "volumeName": "[parameters('volumeName')]",
+                          "mountPath": "[parameters('mountPath')]"
                         }
                       ],
                       "resources": {
@@ -742,17 +926,17 @@
                       }
                     }
                   ],
+                  "scale": {
+                    "minReplicas": "[parameters('minReplicas')]",
+                    "maxReplicas": "[parameters('maxReplicas')]"
+                  },
                   "volumes": [
                     {
                       "name": "[parameters('volumeName')]",
                       "storageName": "[parameters('storageNameMount')]",
                       "storageType": "AzureFile"
                     }
-                  ],
-                  "scale": {
-                    "minReplicas": "[parameters('minReplicas')]",
-                    "maxReplicas": "[parameters('maxReplicas')]"
-                  }
+                  ]
                 }
               }
             }
@@ -760,7 +944,7 @@
           "outputs": {
             "fqdn": {
               "type": "string",
-              "value": "[reference(resourceId('Microsoft.App/containerApps', parameters('containerAppName'))).configuration.ingress.fqdn]"
+              "value": "[reference(resourceId('Microsoft.App/containerApps', parameters('containerAppName')), '2022-06-01-preview').configuration.ingress.fqdn]"
             }
           }
         }
@@ -775,7 +959,7 @@
   "outputs": {
     "containerAppUrl": {
       "type": "string",
-      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--{1}', deployment().name, parameters('applicationName')))).outputs.fqdn.value]"
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--{1}', deployment().name, parameters('applicationName'))), '2022-09-01').outputs.fqdn.value]"
     }
   }
 }

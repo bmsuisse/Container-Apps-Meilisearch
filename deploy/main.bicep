@@ -1,3 +1,4 @@
+// Fixed main.bicep
 targetScope = 'subscription'
 
 //Azure Regions which Azure Container Apps available at can be found on this link:
@@ -53,11 +54,13 @@ param deploymentEnvironment string = 'dev'
 @minLength(32)
 param meilisearchMasterKey string = newGuid()
 
+@description('Use managed identity for storage access instead of keys')
+param useManagedIdentity bool = true
 
 var resourceGroupName = '${applicationName}-${deploymentEnvironment}-rg'
 var logAnalyticsWorkspaceResName = '${applicationName}-${deploymentEnvironment}-logs'
 var environmentName = '${applicationName}-${deploymentEnvironment}-env'
-var storageAccountName  = '${take(applicationName,14)}${deploymentEnvironment}strg'
+var storageAccountName = '${take(applicationName,14)}${deploymentEnvironment}strg'
 
 var shareName = 'meilisearch-fileshare'
 var storageNameMount = 'permanent-storage-mount'
@@ -78,19 +81,6 @@ resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {
   tags: defaultTags
 }
 
-module storageModule 'modules/storage.bicep' = {
-  scope: resourceGroup(rg.name)
-  name: '${deployment().name}--storage'
-  params: {
-    storageAccountName: storageAccountName
-    location: rg.location
-    applicationName: applicationName
-    containerName: applicationName
-    shareName: shareName
-    resourceTags: defaultTags
-  }
-}
-
 module logAnalyticsWorkspace 'modules/logAnalyticsWorkspace.bicep' = {
   scope: resourceGroup(rg.name)
   name: '${deployment().name}--logAnalyticsWorkspace'
@@ -101,6 +91,7 @@ module logAnalyticsWorkspace 'modules/logAnalyticsWorkspace.bicep' = {
   }
 }
 
+// Create the Container App Environment with managed identity first
 module environment 'modules/acaEnvironment.bicep' = {
   scope: resourceGroup(rg.name)
   name: '${deployment().name}--acaenvironment'
@@ -110,30 +101,54 @@ module environment 'modules/acaEnvironment.bicep' = {
     logAnalyticsWorkspaceCustomerId: logAnalyticsWorkspace.outputs.logAnalyticsWorkspaceCustomerId
     logAnalyticsWorkspacePrimarySharedKey: logAnalyticsWorkspace.outputs.logAnalyticsWorkspacePrimarySharedKey
     resourceTags: defaultTags
+    enableManagedIdentity: useManagedIdentity
   }
 }
 
+// Create the storage account with resource access rules for the Container App Environment
+module storageModule 'modules/storage.bicep' = {
+  scope: resourceGroup(rg.name)
+  name: '${deployment().name}--storage'
+  params: {
+    storageAccountName: storageAccountName
+    location: rg.location
+    applicationName: applicationName
+    containerName: applicationName
+    shareName: shareName
+    resourceTags: defaultTags
+    containerAppEnvId: environment.outputs.acaEnvironmentId
+    enableManagedIdentityAccess: useManagedIdentity
+  }
+}
+
+// Assign the necessary RBAC role to allow the managed identity to access storage
+module roleAssignment 'modules/storageRoleAssignment.bicep' = if (useManagedIdentity) {
+  scope: resourceGroup(rg.name)
+  name: '${deployment().name}--roleAssignment'
+  params: {
+    storageAccountId: storageModule.outputs.id
+    principalId: environment.outputs.principalId
+  }
+}
+
+// Create the storage mount on the Container App Environment
 module environmentStorages 'modules/acaEnvironmentStorages.bicep' = {
   scope: resourceGroup(rg.name)
   name: '${deployment().name}--acaenvironmentstorages'
-  dependsOn:[
-    environment
-  ]
   params: {
     acaEnvironmentName: environmentName
     storageAccountResName: storageModule.outputs.storageAccountName
-    storageAccountResourceKey: storageModule.outputs.storageKey
+    storageAccountResourceKey: useManagedIdentity ? '' : storageModule.outputs.storageKey
     storageNameMount: storageNameMount
     shareName: shareName
+    useManagedIdentity: useManagedIdentity
   }
 }
 
+// Deploy the Container App with dependency on the storage mount
 module containerApp 'modules/containerApp.bicep' = {
   scope: resourceGroup(rg.name)
   name: '${deployment().name}--${applicationName}'
-  dependsOn: [
-    environment
-  ]
   params: {
     containerAppName: applicationName
     location: rg.location
@@ -168,6 +183,9 @@ module containerApp 'modules/containerApp.bicep' = {
       }
     ]
   }
+  dependsOn: [
+    environmentStorages
+  ]
 }
 
 output containerAppUrl string = containerApp.outputs.fqdn

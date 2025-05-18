@@ -1,3 +1,5 @@
+// 2. STORAGE.BICEP - Updated to include resource access rules
+
 @description('The name of your application')
 param applicationName string
 
@@ -16,6 +18,12 @@ param shareName string
 @description('The name of storage account')
 param storageAccountName string
 
+@description('The resource ID of the Container App Environment to allow access')
+param containerAppEnvId string = ''
+
+@description('Enable access from Container App Environment managed identity')
+param enableManagedIdentityAccess bool = true
+
 resource storageAccount 'Microsoft.Storage/storageAccounts@2021-09-01' = {
   name: storageAccountName
   location: location
@@ -26,7 +34,7 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2021-09-01' = {
   kind: 'StorageV2'
   properties: {
     publicNetworkAccess: 'Disabled'
-    allowBlobPublicAccess: false  // Explicitly set to false to comply with policy
+    allowBlobPublicAccess: false
     minimumTlsVersion: 'TLS1_2'
     supportsHttpsTrafficOnly: true
     networkAcls: {
@@ -34,6 +42,12 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2021-09-01' = {
       defaultAction: 'Deny'
       virtualNetworkRules: []
       ipRules: []
+      resourceAccessRules: enableManagedIdentityAccess && !empty(containerAppEnvId) ? [
+        {
+          tenantId: subscription().tenantId
+          resourceId: containerAppEnvId
+        }
+      ] : []
     }
   }
 }
@@ -57,7 +71,7 @@ resource storageContainer 'Microsoft.Storage/storageAccounts/blobServices/contai
   name: containerName
   parent: blobServices
   properties: {
-    publicAccess: 'None'  // Explicitly set container to no public access
+    publicAccess: 'None'
   }
 }
 
@@ -76,9 +90,6 @@ resource permanentFileShare 'Microsoft.Storage/storageAccounts/fileServices/shar
   }
 }
 
-// Note: For use in secure environments, this key should be passed to a Key Vault
-// instead of being exposed as an output. The key is kept here for compatibility
-// with existing code but should be treated as sensitive.
 var storageKeyValue = storageAccount.listKeys().keys[0].value
 
 output storageAccountName string = storageAccount.name
