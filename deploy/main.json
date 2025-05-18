@@ -194,7 +194,19 @@
               "sku": {
                 "name": "Standard_LRS"
               },
-              "kind": "StorageV2"
+              "kind": "StorageV2",
+              "properties": {
+                "publicNetworkAccess": "Disabled",
+                "allowBlobPublicAccess": false,
+                "minimumTlsVersion": "TLS1_2",
+                "supportsHttpsTrafficOnly": true,
+                "networkAcls": {
+                  "bypass": "AzureServices",
+                  "defaultAction": "Deny",
+                  "virtualNetworkRules": [],
+                  "ipRules": []
+                }
+              }
             },
             {
               "type": "Microsoft.Storage/storageAccounts/blobServices",
@@ -202,7 +214,17 @@
               "name": "[format('{0}/{1}', parameters('storageAccountName'), 'default')]",
               "dependsOn": [
                 "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
-              ]
+              ],
+              "properties": {
+                "containerDeleteRetentionPolicy": {
+                  "enabled": true,
+                  "days": 7
+                },
+                "deleteRetentionPolicy": {
+                  "enabled": true,
+                  "days": 7
+                }
+              }
             },
             {
               "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
@@ -210,7 +232,10 @@
               "name": "[format('{0}/{1}/{2}', parameters('storageAccountName'), 'default', parameters('containerName'))]",
               "dependsOn": [
                 "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccountName'), 'default')]"
-              ]
+              ],
+              "properties": {
+                "publicAccess": "None"
+              }
             },
             {
               "type": "Microsoft.Storage/storageAccounts/fileServices",
