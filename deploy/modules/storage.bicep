@@ -27,9 +27,13 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2021-09-01' = {
   properties: {
     publicNetworkAccess: 'Disabled'
     allowBlobPublicAccess: false
+    minimumTlsVersion: 'TLS1_2'
+    supportsHttpsTrafficOnly: true
     networkAcls: {
       bypass: 'AzureServices'
       defaultAction: 'Deny'
+      virtualNetworkRules: []
+      ipRules: []
     }
   }
 }
@@ -37,11 +41,24 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2021-09-01' = {
 resource blobServices 'Microsoft.Storage/storageAccounts/blobServices@2021-09-01' = {
   name: 'default'
   parent: storageAccount
+  properties: {
+    containerDeleteRetentionPolicy: {
+      enabled: true
+      days: 7
+    }
+    deleteRetentionPolicy: {
+      enabled: true
+      days: 7
+    }
+  }
 }
 
 resource storageContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2021-09-01' = {
   name: containerName
   parent: blobServices
+  properties: {
+    publicAccess: 'None'
+  }
 }
 
 resource fileServices 'Microsoft.Storage/storageAccounts/fileServices@2021-09-01' = {
@@ -59,9 +76,13 @@ resource permanentFileShare 'Microsoft.Storage/storageAccounts/fileServices/shar
   }
 }
 
+// Note: For use in secure environments, this key should be passed to a Key Vault
+// instead of being exposed as an output. The key is kept here for compatibility
+// with existing code but should be treated as sensitive.
 var storageKeyValue = storageAccount.listKeys().keys[0].value
 
 output storageAccountName string = storageAccount.name
 output id string = storageAccount.id
 output apiVersion string = storageAccount.apiVersion
+@secure()
 output storageKey string = storageKeyValue
