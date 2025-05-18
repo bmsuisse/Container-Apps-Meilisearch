@@ -1,4 +1,4 @@
-// Fixed main.bicep with no delay references
+// Updated main.bicep to include role assignment
 targetScope = 'subscription'
 
 @description('The Azure region code for deployment resource group and resources such as westus, eastus, northcentralus, northeurope, etc...')
@@ -52,8 +52,14 @@ param deploymentEnvironment string = 'dev'
 @minLength(32)
 param meilisearchMasterKey string = newGuid()
 
-// We'll keep this parameter but not use it for role assignments
+@description('Enable system-assigned managed identity')
 param useManagedIdentity bool = true
+
+@description('Enable public network access to storage')
+param enablePublicNetworkAccess bool = true
+
+@description('Enable role assignment for the managed identity')
+param enableRoleAssignment bool = true
 
 var resourceGroupName = '${applicationName}-${deploymentEnvironment}-rg'
 var logAnalyticsWorkspaceResName = '${applicationName}-${deploymentEnvironment}-logs'
@@ -104,7 +110,7 @@ module environment 'modules/acaEnvironment.bicep' = {
   }
 }
 
-// Create the storage account with secure settings but no resource access rules
+// Create the storage account with secure settings but allow network access
 module storageModule 'modules/storage.bicep' = {
   scope: resourceGroup(rg.name)
   name: '${deployment().name}--storage'
@@ -115,7 +121,22 @@ module storageModule 'modules/storage.bicep' = {
     containerName: applicationName
     shareName: shareName
     resourceTags: defaultTags
+    enablePublicNetworkAccess: enablePublicNetworkAccess
   }
+}
+
+// Assign Storage Account Contributor role to the Container App Environment's managed identity
+module roleAssignment 'modules/storageRoleAssignment.bicep' = if (useManagedIdentity && enableRoleAssignment) {
+  scope: resourceGroup(rg.name)
+  name: '${deployment().name}--roleAssignment'
+  params: {
+    storageAccountId: storageModule.outputs.id
+    principalId: environment.outputs.principalId
+  }
+  dependsOn: [
+    environment
+    storageModule
+  ]
 }
 
 // Create the storage mount on the Container App Environment using storage keys
@@ -132,6 +153,7 @@ module environmentStorages 'modules/acaEnvironmentStorages.bicep' = {
   dependsOn: [
     environment
     storageModule
+    roleAssignment
   ]
 }
 
