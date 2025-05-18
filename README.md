@@ -26,20 +26,13 @@ When the deployment completes successfully, you should see the resource group an
 2. If you are using PowerShell you can execute the command below, do not forget to generate your own Master Key
 
 ```PowerShell
-az deployment sub create `
-  --template-file ./main.bicep `
-  --location WestUS `
-  --parameters '{ \"meilisearchMasterKey\": {\"value\":\"YOUR_MASTER_KEY\"}, \"applicationName\": {\"value\":\"YOUR_APP_NAME\"}, \"deploymentEnvironment\": {\"value\":\"dev\"}, \"location\": {\"value\":\"westus\"} }'
+az deployment sub create \
+  --location westeurope \
+  --template-file main.json \
+  --parameters deploymentEnvironment=dev applicationName=bmsmeilisearch enablePublicNetworkAccess=true
 ```
 
-3. If you are using Bash you can execute the command below:
-```bash
-az deployment sub create \
---name YOUR_APP_NAME \
---template-file .\main.bicep 
---location WestUS \
---parameters applicationName=MYAPPLICATIONNAME meilisearchMasterKey=YOUR_MASTER_KEY deploymentEnvironment=dev location=westus
-```
+
 
 
 
