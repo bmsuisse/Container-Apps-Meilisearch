@@ -1,4 +1,4 @@
-// Updated main.bicep with better dependencies
+// Fixed main.bicep with no delay references
 targetScope = 'subscription'
 
 @description('The Azure region code for deployment resource group and resources such as westus, eastus, northcentralus, northeurope, etc...')
@@ -90,15 +90,6 @@ module logAnalyticsWorkspace 'modules/logAnalyticsWorkspace.bicep' = {
   }
 }
 
-// Let's add a DELAY module that will wait for 30 seconds
-module delay1 'modules/delay.bicep' = {
-  scope: resourceGroup(rg.name)
-  name: '${deployment().name}--delay1'
-  dependsOn: [
-    logAnalyticsWorkspace
-  ]
-}
-
 // Create the Container App Environment with managed identity
 module environment 'modules/acaEnvironment.bicep' = {
   scope: resourceGroup(rg.name)
@@ -111,18 +102,6 @@ module environment 'modules/acaEnvironment.bicep' = {
     resourceTags: defaultTags
     enableManagedIdentity: useManagedIdentity
   }
-  dependsOn: [
-    delay1
-  ]
-}
-
-// Let's add a second DELAY module to ensure the environment is fully provisioned
-module delay2 'modules/delay.bicep' = {
-  scope: resourceGroup(rg.name)
-  name: '${deployment().name}--delay2'
-  dependsOn: [
-    environment
-  ]
 }
 
 // Create the storage account with secure settings but no resource access rules
@@ -137,19 +116,6 @@ module storageModule 'modules/storage.bicep' = {
     shareName: shareName
     resourceTags: defaultTags
   }
-  dependsOn: [
-    rg
-  ]
-}
-
-// Let's add a third DELAY to ensure storage is fully provisioned
-module delay3 'modules/delay.bicep' = {
-  scope: resourceGroup(rg.name)
-  name: '${deployment().name}--delay3'
-  dependsOn: [
-    storageModule
-    delay2
-  ]
 }
 
 // Create the storage mount on the Container App Environment using storage keys
@@ -164,16 +130,8 @@ module environmentStorages 'modules/acaEnvironmentStorages.bicep' = {
     shareName: shareName
   }
   dependsOn: [
-    delay3
-  ]
-}
-
-// Let's add a fourth DELAY to ensure storage mount is fully provisioned
-module delay4 'modules/delay.bicep' = {
-  scope: resourceGroup(rg.name)
-  name: '${deployment().name}--delay4'
-  dependsOn: [
-    environmentStorages
+    environment
+    storageModule
   ]
 }
 
@@ -216,7 +174,7 @@ module containerApp 'modules/containerApp.bicep' = {
     ]
   }
   dependsOn: [
-    delay4
+    environmentStorages
   ]
 }
 
